@@ -16,7 +16,8 @@ def processar_todos_arquivos(pasta_dados):
     for caminho in caminhos_arquivos:
         try:
             # 1. Leitura do arquivo individual
-            df = pd.read_csv(caminho, sep=';', header=1, decimal=',')
+            # Adicionamos o encoding='latin1'
+            df = pd.read_csv(caminho, sep=';', header=1, decimal=',', encoding='latin1')
             df = df.iloc[:, :2].dropna()
             df.columns = ['Tempo', 'Vibracao']
             df['Tempo'] = pd.to_numeric(df['Tempo'], errors='coerce')
@@ -52,9 +53,8 @@ def processar_todos_arquivos(pasta_dados):
             })
             
         except Exception as e:
-            # Silenciamos o erro com 'pass' para o terminal não virar uma bagunça
-            # caso um ou outro CSV esteja corrompido no meio de milhares
-            pass
+            # Tira o 'pass' e coloca este print para lermos o erro:
+            print(f"Erro no arquivo {nome_maquina}: {e}")
             
     # 4. Salva tudo num único arquivo
     if len(dados_compilados) > 0:
