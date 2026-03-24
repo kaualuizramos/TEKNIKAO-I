@@ -15,8 +15,7 @@ def processar_todos_arquivos(pasta_dados):
 
     for caminho in caminhos_arquivos:
         try:
-            # 1. Leitura do arquivo individual
-            # Adicionamos o encoding='latin1'
+            # 1. Leitura do arquivo CSV individual
             df = pd.read_csv(caminho, sep=';', header=1, decimal=',', encoding='latin1')
             df = df.iloc[:, :2].dropna()
             df.columns = ['Tempo', 'Vibracao']
@@ -28,30 +27,32 @@ def processar_todos_arquivos(pasta_dados):
             if len(df) == 0:
                 continue
 
-            # Remove o "offset" contínuo do sensor
+            # 2. Hurbilketa (Abordagem 2): Subtrai a média para remover o "desvio" do sensor
             df['Vibracao'] = df['Vibracao'] - df['Vibracao'].mean()
-            
-            # ... (segue com o cálculo da FFT normal) ...
 
-            # 2. Cálculo rápido da FFT
+            # 3. Cálculo da FFT (Transformada de Fourier)
             N = len(df)
             dt = df['Tempo'].iloc[1] - df['Tempo'].iloc[0]
+            
+            # Ignora arquivos onde o tempo esteja corrompido ou zerado
+            if dt <= 0:
+                continue
+
             fft_valores = np.fft.fft(df['Vibracao'])
             frequencias = np.fft.fftfreq(N, dt)
             
             amplitudes_positivas = (2.0/N) * np.abs(fft_valores[0:N//2])
             frequencias_positivas = frequencias[:N//2]
             
-            # 3. Extração da Característica (Feature Engineering)
-            # Fatiamos [1:] para IGNORAR a frequência 0 Hz (Componente DC)
+            # 4. Hurbilketa (Abordagem 1): Ignora a frequência de 0 Hz cortando o array [1:]
             amplitudes_reais = amplitudes_positivas[1:]
             frequencias_reais = frequencias_positivas[1:]
             
+            # 5. Extração da Característica (Acha o pico real da falha)
             indice_pico = np.argmax(amplitudes_reais)
             frequencia_pico = frequencias_reais[indice_pico]
             amplitude_maxima = amplitudes_reais[indice_pico]
             
-            # Pega o nome do arquivo para saber de qual máquina veio
             nome_maquina = os.path.basename(caminho)
             
             # Guarda os resultados da máquina atual
@@ -62,25 +63,23 @@ def processar_todos_arquivos(pasta_dados):
             })
             
         except Exception as e:
-            # Tira o 'pass' e coloca este print para lermos o erro:
-            print(f"Erro no arquivo {nome_maquina}: {e}")
+            # Ignora arquivos corrompidos silenciosamente para não poluir o terminal
+            pass
             
-    # 4. Salva tudo num único arquivo
+    # 6. Salva tudo num único arquivo final
     if len(dados_compilados) > 0:
         df_final = pd.DataFrame(dados_compilados)
         df_final.to_csv('dataset_treino.csv', index=False)
-        print("\nProcessamento concluído! O arquivo 'dataset_treino.csv' foi gerado com sucesso e contém", len(dados_compilados), "linhas.")
+        print(f"\nProcessamento concluído! O arquivo 'dataset_treino.csv' foi gerado com sucesso e contém {len(dados_compilados)} linhas.")
     else:
         print("\nNenhum dado válido foi encontrado para salvar.")
 
 if __name__ == "__main__":
-    # 1. Pega a pasta onde o script está (AmbienteVirtualPython)
+    # 1. Pega a pasta onde o script está
     diretorio_script = os.path.dirname(os.path.abspath(__file__))
-    
-    # 2. Volta uma pasta para trás (vai para a raiz do projeto)
+    # 2. Volta uma pasta para trás
     pasta_raiz = os.path.dirname(diretorio_script)
-    
-    # 3. Entra na pasta dados_brutos
+    # 3. Entra na pasta de dados extraídos
     pasta_dados = os.path.join(pasta_raiz, 'dados_brutos')
     
     processar_todos_arquivos(pasta_dados)
