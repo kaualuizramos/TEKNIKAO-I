@@ -1,2 +1,5 @@
 venv/
+.env/
+.venv/
+.venv-1/
 dados_brutos/
