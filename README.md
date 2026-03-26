@@ -30,7 +30,7 @@ O sistema segue 4 etapas principais:
 Para cada janela de tempo (15 pontos), são extraídas:
 
 * Valores históricos da vibração
-* Média
+* Valor de vibração global
 * Desvio padrão
 * Valor máximo
 * Tendência (crescimento da vibração)
@@ -121,7 +121,7 @@ O modelo utiliza:
 ### 1. Instalar dependências
 
 ```bash
-pip install streamlit xgboost numpy matplotlib
+pip install -r requirements.txt
 ```
 
 ---
