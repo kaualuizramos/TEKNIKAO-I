@@ -87,19 +87,21 @@ def normalizar(df, coluna):
     return valores_scaled.flatten(), scaler
 
 # FEATURES INTELIGENTES
-
-# FEATURES INTELIGENTES (Atualizado para prever o Delta)
 def criar_features(valores, janela):
     X, y = [], []
 
     for i in range(len(valores) - janela):
         seq = valores[i:i+janela]
         
-        # O PULO DO GATO: O alvo (y) não é mais o valor absoluto.
-        # É a DIFERENÇA (o quanto cresceu) entre o valor futuro e o último dia da janela.
         valor_futuro = valores[i+janela]
         crescimento = valor_futuro - seq[-1]
 
+        # REGRAS DE OURO DA ENGENHARIA DE MANUTENÇÃO:
+        # Se a vibração caiu bruscamente (ex: menos que -0.1g), foi intervenção humana.
+        # Nós pulamos essa linha para o modelo não aprender a consertar a máquina sozinho.
+        if crescimento < -0.1:
+            continue
+            
         features = list(seq)
         features += [
             np.mean(seq),
@@ -110,7 +112,7 @@ def criar_features(valores, janela):
         ]
 
         X.append(features)
-        y.append(crescimento) # Treina para prever o degrau de subida
+        y.append(crescimento) # A IA agora só treina com deltas positivos ou neutros
 
     return np.array(X), np.array(y)
 
