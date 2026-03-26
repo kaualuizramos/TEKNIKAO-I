@@ -222,7 +222,7 @@ if falha_idx is not None:
 
 ax.legend()
 ax.set_title("Prognóstico de Falha")
-ax.set_xlabel("Tempo (dias)")
+ax.set_xlabel("Tempo (meses)")
 ax.set_ylabel("Vibração")
 
 st.pyplot(fig)
