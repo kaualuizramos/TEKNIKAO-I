@@ -137,19 +137,18 @@ streamlit run app.py
 ## 📁 Estrutura do Projeto
 
 ```
-TEKNIKAO-I/
-│
-├── data/
-│   └── Dataset.txt
-├──graficos_de_falha
-├── models/
-├── plots/
-├── src/
-│   └── xgboost_model.py
-│
-├── app.py
-├── main.py
-└── README.md
+📦 TEKNIKAO-I
+ ┣ 📂 data/               # Ficheiros de dados brutos e processados (Dataset.txt)
+ ┣ 📂 models/             # Cérebro da IA exportado (.pkl, .json, .keras)
+ ┣ 📂 plots/              # Saída dos algoritmos (Gráficos RUL, Curvas de Tendência)
+ ┣ 📂 reports/            # Relatórios analíticos exportados
+ ┣ 📂 src/                # Código-fonte principal da solução
+ ┃ ┣ 📜 DatasetCleaner.py         # ETL e Interpolação de dados
+ ┃ ┣ 📜 graficos_pitch.py         # Ajuste Físico-Matemático Exponencial
+ ┃ ┣ 📜 complete_pipeline.py      # Execução orquestrada do sistema
+ ┃ ┗ 📜 xgboost_model_v4.py       # Modelo Preditivo ML
+ ┣ 📜 requirements.txt    # Dependências do projeto
+ ┗ 📜 README.md           # Documentação do projeto
 ```
 
 ---
