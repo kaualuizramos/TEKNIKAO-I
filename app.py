@@ -193,12 +193,12 @@ falha_idx = detectar_falha(previsoes_suave, limite)
 st.subheader("📊 Status da Máquina")
 
 if falha_idx is not None:
-    if falha_idx < 30:
-        st.error(f"🔴 CRÍTICO - Falha em ~{falha_idx} dias")
-    elif falha_idx < 80:
-        st.warning(f"🟡 ALERTA - Falha em ~{falha_idx} dias")
+    if falha_idx <= 3:
+        st.error(f"🔴 CRÍTICO - Falha em ~{falha_idx} meses")
+    elif falha_idx <= 6:
+        st.warning(f"🟡 ALERTA - Falha em ~{falha_idx} meses")
     else:
-        st.info(f"🟢 Estável (falha distante: ~{falha_idx} dias)")
+        st.info(f"🟢 Estável (falha distante: ~{falha_idx} meses)")
 else:
     st.success("🟢 Máquina saudável")
 

@@ -193,7 +193,7 @@ def main():
                          alpha=0.3)
 
         plt.title(f"Máquina {i+1} - Prognóstico de Falha")
-        plt.xlabel("Tempo (dias)")
+        plt.xlabel("Tempo (meses)")
         plt.ylabel("Vibração (RMS)")
         plt.legend()
         plt.grid(alpha=0.3)
@@ -204,7 +204,7 @@ def main():
 
         # ===================== RESULTADO =====================
         if falha_idx is not None:
-            print(f"⚠️ Máquina {i+1}: falha em ~{falha_idx} dias")
+            print(f"⚠️ Máquina {i+1}: falha em ~{falha_idx} meses")
         else:
             print(f"✅ Máquina {i+1}: saudável")
 
