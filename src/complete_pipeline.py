@@ -9,12 +9,14 @@ import sys
 import os
 
 # Import our modules
-from PredictiveMaintenanceSystem.predictive_maintenance_system import (
+from predictive_maintenance_system import (
     PredictiveMaintenanceSystem, VibrationThresholds, RiskScorer
 )
 from raw_data_processor import (
     RawVibrationDataProcessor, TimeSeriesDataBuilder
 )
+from brazilian_data_processor import BrazilianDataProcessor
+from vibration_visualizer import VibrationTendencyVisualizer
 
 
 class CompletePredictiveMaintenancePipeline:
@@ -31,6 +33,8 @@ class CompletePredictiveMaintenancePipeline:
         self.pm_system = PredictiveMaintenanceSystem()
         self.data_processor = RawVibrationDataProcessor()
         self.ts_builder = TimeSeriesDataBuilder()
+        self.brazilian_processor = BrazilianDataProcessor()
+        self.visualizer = VibrationTendencyVisualizer()
     
     def run_full_analysis(self, dados_brutos_path, features_dataset_path=None):
         """
@@ -274,6 +278,192 @@ class CompletePredictiveMaintenancePipeline:
         
         return analysis_results
     
+    def run_brazilian_dataset_analysis(self, dataset_path, machine_name="Dataset_Machine",
+                                     iso_category='B', create_visualizations=True):
+        """
+        Execute complete analysis pipeline for Brazilian Dataset.txt format.
+        
+        Parameters:
+        - dataset_path: Path to Dataset.txt file
+        - machine_name: Name for the machine/equipment
+        - iso_category: ISO 20816 vibration category (A, B, C, D)
+        - create_visualizations: Whether to generate tendency curve plots
+        """
+        
+        print("\n" + "="*70)
+        print("BRAZILIAN DATASET ANALYSIS - PREDICTIVE MAINTENANCE")
+        print("="*70)
+        
+        # =====================================================================
+        # STEP 1: VALIDATE AND PROCESS BRAZILIAN DATASET
+        # =====================================================================
+        print("\n🇧🇷 STEP 1: Brazilian Data Processing")
+        print("-" * 70)
+        
+        # Validate format
+        is_valid, message = self.brazilian_processor.validate_brazilian_format(dataset_path)
+        if not is_valid:
+            print(f"❌ Invalid Brazilian format: {message}")
+            return None
+        
+        print(f"✓ Valid Brazilian format: {message}")
+        
+        # Process the dataset
+        df = self.brazilian_processor.process_dataset_file(dataset_path, machine_name)
+        if df is None or df.empty:
+            print("❌ Failed to process dataset")
+            return None
+        
+        print(f"✓ Processed {len(df)} measurements")
+        print(f"  Date range: {df['date'].min().date()} to {df['date'].max().date()}")
+        print(f"  Sensor types: {', '.join(df['sensor_type'].unique())}")
+        
+        # =====================================================================
+        # STEP 2: CREATE VISUALIZATIONS
+        # =====================================================================
+        if create_visualizations:
+            print("\n📊 STEP 2: Creating Tendency Visualizations")
+            print("-" * 70)
+            
+            # Create comprehensive visualization report
+            plots_created = self.visualizer.create_comprehensive_report(
+                df, machine_name=machine_name, iso_category=iso_category
+            )
+            
+            print(f"✓ Created {len(plots_created)} visualization plots")
+        
+        # =====================================================================
+        # STEP 3: ANALYZE EACH SENSOR TYPE
+        # =====================================================================
+        print("\n🔍 STEP 3: Sensor-by-Sensor Analysis")
+        print("-" * 70)
+        
+        analysis_results = {}
+        risk_summary = []
+        
+        for sensor_type in df['sensor_type'].unique():
+            sensor_data = df[df['sensor_type'] == sensor_type].copy()
+            
+            print(f"\n📡 Analyzing Sensor {sensor_type}:")
+            
+            # Create time series for this sensor
+            time_series = self.brazilian_processor.create_time_series_for_prediction(
+                sensor_data, target_column='amplitude_max'
+            )
+            
+            if time_series is None or time_series.empty:
+                print(f"  ⚠️  Insufficient data for sensor {sensor_type}")
+                continue
+            
+            print(f"  ✓ {len(time_series)} measurements for analysis")
+            
+            # Run predictive maintenance analysis
+            report = self.pm_system.analyze_machine(
+                f"{machine_name}_{sensor_type}",
+                time_series,
+                days_forecast=30
+            )
+            
+            analysis_results[sensor_type] = report
+            
+            # Collect risk summary
+            if 'risk_assessment' in report:
+                risk_summary.append({
+                    'Sensor': sensor_type,
+                    'Risk_Score': report['risk_assessment']['risk_score'],
+                    'Risk_Level': report['risk_assessment']['risk_level'],
+                    'Current_Amplitude': report['current_measurements']['amplitude_mm_s'],
+                    'Days_to_Failure': report['failure_prediction']['days_to_failure'],
+                    'ISO_Category': iso_category
+                })
+        
+        # =====================================================================
+        # STEP 4: CONSOLIDATED RISK ASSESSMENT
+        # =====================================================================
+        print("\n⚠️  STEP 4: Consolidated Risk Assessment")
+        print("-" * 70)
+        
+        if risk_summary:
+            risk_df = pd.DataFrame(risk_summary)
+            risk_df = risk_df.sort_values('Risk_Score', ascending=False)
+            
+            print("\n📋 SENSOR RISK RANKING:\n")
+            print(risk_df.to_string(index=False))
+            
+            # Overall machine risk (worst sensor)
+            overall_risk = risk_df['Risk_Score'].max()
+            overall_level = risk_df.loc[risk_df['Risk_Score'].idxmax(), 'Risk_Level']
+            
+            print(f"\n🏭 OVERALL MACHINE RISK: {overall_level} ({overall_risk:.1f}/100)")
+        
+        # =====================================================================
+        # STEP 5: MAINTENANCE RECOMMENDATIONS
+        # =====================================================================
+        print("\n🔧 STEP 5: Maintenance Recommendations")
+        print("-" * 70)
+        
+        critical_sensors = [
+            sensor for sensor, report in analysis_results.items()
+            if report.get('failure_prediction', {}).get('alert_status') == 'CRITICAL'
+        ]
+        
+        if critical_sensors:
+            print(f"\n🚨 CRITICAL SENSORS REQUIRING IMMEDIATE ATTENTION:\n")
+            for sensor in critical_sensors:
+                report = analysis_results[sensor]
+                print(f"   🔴 Sensor {sensor}")
+                print(f"       Risk: {report['risk_assessment']['risk_level']}")
+                print(f"       Current: {report['current_measurements']['amplitude_mm_s']:.2f} mm/s")
+                if report['failure_prediction']['days_to_failure']:
+                    print(f"       Days to Failure: {report['failure_prediction']['days_to_failure']}")
+                print(f"       Actions: {', '.join([a for a in report['maintenance']['suggested_actions'] if a])}")
+                print()
+        else:
+            print("✓ No critical alerts detected")
+        
+        # =====================================================================
+        # STEP 6: SAVE RESULTS
+        # =====================================================================
+        print("\n💾 STEP 6: Saving Analysis Results")
+        print("-" * 70)
+        
+        os.makedirs('reports', exist_ok=True)
+        os.makedirs('data', exist_ok=True)
+        
+        # Save processed data
+        output_file = f"data/{machine_name.replace(' ', '_')}_processed.csv"
+        df.to_csv(output_file, index=False)
+        print(f"✓ Processed data saved: {output_file}")
+        
+        # Save risk summary
+        if risk_summary:
+            risk_file = f"reports/{machine_name.replace(' ', '_')}_risk_summary.csv"
+            risk_df = pd.DataFrame(risk_summary)
+            risk_df.to_csv(risk_file, index=False)
+            print(f"✓ Risk summary saved: {risk_file}")
+        
+        # Save detailed reports
+        for sensor_type, report in analysis_results.items():
+            safe_name = f"{machine_name.replace(' ', '_')}_{sensor_type}"
+            report_file = f'reports/{safe_name}_analysis.json'
+            
+            import json
+            report_copy = self._serialize_report(report)
+            with open(report_file, 'w') as f:
+                json.dump(report_copy, f, indent=2, default=str)
+            print(f"✓ Sensor {sensor_type} report saved: {report_file}")
+        
+        print("\n" + "="*70)
+        print("BRAZILIAN DATASET ANALYSIS COMPLETE")
+        print("="*70 + "\n")
+        
+        return {
+            'processed_data': df,
+            'analysis_results': analysis_results,
+            'risk_summary': risk_summary if risk_summary else None,
+            'visualizations': plots_created if create_visualizations else None
+        }
+    
     @staticmethod
     def _serialize_report(report):
         """Convert report to JSON-serializable format."""
@@ -417,6 +607,41 @@ def example_3_single_machine_analysis():
     pm_system.print_report(report)
 
 
+def example_4_brazilian_dataset_analysis():
+    """
+    Example 4: Analyze Brazilian Dataset.txt with visualizations.
+    """
+    print("\n" + "="*70)
+    print("EXAMPLE 4: Brazilian Dataset Analysis with Graphics")
+    print("="*70 + "\n")
+    
+    pipeline = CompletePredictiveMaintenancePipeline()
+    
+    # Path to Dataset.txt
+    dataset_path = 'data/Dataset.txt'
+    
+    if os.path.exists(dataset_path):
+        print(f"📄 Analyzing Brazilian dataset: {dataset_path}\n")
+        
+        results = pipeline.run_brazilian_dataset_analysis(
+            dataset_path,
+            machine_name="Brazilian_Equipment",
+            iso_category='B',  # ISO 20816 Category B (medium machinery)
+            create_visualizations=True
+        )
+        
+        if results:
+            print("\n✅ Analysis completed successfully!")
+            print(f"   📊 Visualizations saved to: plots/")
+            print(f"   📋 Reports saved to: reports/")
+            print(f"   💾 Processed data saved to: data/")
+        else:
+            print("\n❌ Analysis failed")
+    else:
+        print(f"❌ Dataset.txt not found at: {dataset_path}")
+        print("   Please ensure Dataset.txt is in the data/ folder")
+
+
 # =============================================================================
 # MAIN EXECUTION
 # =============================================================================
@@ -436,15 +661,18 @@ if __name__ == "__main__":
             example_2_full_pipeline()
         elif example == '3':
             example_3_single_machine_analysis()
+        elif example == '4':
+            example_4_brazilian_dataset_analysis()
         else:
             print(f"Unknown example: {example}")
-            print("Usage: python complete_pipeline.py [1|2|3]")
+            print("Usage: python complete_pipeline.py [1|2|3|4]")
     else:
         print("\nUsage Examples:")
         print("  python complete_pipeline.py 1  - Process new equipment data")
         print("  python complete_pipeline.py 2  - Run complete pipeline")
         print("  python complete_pipeline.py 3  - Single machine analysis")
-        print("\nOr run: python complete_pipeline.py 2  (default full analysis)\n")
+        print("  python complete_pipeline.py 4  - Brazilian dataset analysis")
+        print("\nOr run: python complete_pipeline.py 4  (Brazilian dataset analysis)\n")
         
-        # Run default (full pipeline)
-        example_2_full_pipeline()
+        # Run default (Brazilian dataset analysis)
+        example_4_brazilian_dataset_analysis()

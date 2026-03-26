@@ -144,10 +144,11 @@ def main_menu():
     print("2. Run demo analysis")
     print("3. Process equipment data from dados_brutos/")
     print("4. Run complete pipeline analysis")
-    print("5. Show examples")
+    print("5. Analyze Brazilian Dataset.txt with graphics")
+    print("6. Show examples")
     print("0. Exit\n")
     
-    choice = input("Select option (0-5): ").strip()
+    choice = input("Select option (0-6): ").strip()
     
     return choice
 
@@ -208,7 +209,26 @@ results = pipeline.run_full_analysis('dados_brutos')
 pipeline.generate_alert_report(results)
 
 
-EXAMPLE 4: Risk Scoring
+EXAMPLE 4: Brazilian Dataset Analysis with Graphics
+────────────────────────────────────────────────────
+
+from complete_pipeline import CompletePredictiveMaintenancePipeline
+
+pipeline = CompletePredictiveMaintenancePipeline()
+
+# Analyze Dataset.txt with Brazilian formatting and create graphics
+results = pipeline.run_brazilian_dataset_analysis(
+    'data/Dataset.txt',
+    machine_name="Brazilian_Equipment",
+    iso_category='B',  # ISO 20816 Category B
+    create_visualizations=True
+)
+
+# Results include processed data, analysis, and visualization paths
+print(f"Visualizations saved to: {results['visualizations']}")
+
+
+EXAMPLE 5: Risk Scoring
 ───────────────────────
 
 from predictive_maintenance_system import RiskScorer
@@ -387,6 +407,26 @@ def main():
                 print(f"\n❌ Error: {e}\n")
         
         elif choice == '5':
+            try:
+                from complete_pipeline import CompletePredictiveMaintenancePipeline
+                print("\n🇧🇷 Analyzing Brazilian Dataset.txt with graphics...\n")
+                pipeline = CompletePredictiveMaintenancePipeline()
+                results = pipeline.run_brazilian_dataset_analysis(
+                    'data/Dataset.txt',
+                    machine_name="Brazilian_Equipment",
+                    iso_category='B',
+                    create_visualizations=True
+                )
+                if results:
+                    print("\n✅ Brazilian dataset analysis completed!")
+                    print("   📊 Check plots/ folder for tendency curve graphics")
+                    print("   📋 Check reports/ folder for detailed analysis")
+                else:
+                    print("\n❌ Brazilian dataset analysis failed")
+            except Exception as e:
+                print(f"\n❌ Error: {e}\n")
+        
+        elif choice == '6':
             show_examples()
         
         elif choice == '0':
@@ -394,7 +434,7 @@ def main():
             break
         
         else:
-            print("\n⚠️  Invalid option. Please select 0-5.\n")
+            print("\n⚠️  Invalid option. Please select 0-6.\n")
         
         input("Press Enter to continue...")
 

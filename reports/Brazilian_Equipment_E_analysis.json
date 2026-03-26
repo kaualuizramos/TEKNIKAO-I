@@ -1,0 +1,75 @@
+{
+  "machine": "Brazilian_Equipment_E",
+  "equipment_type": "Unknown Equipment",
+  "timestamp": "2022-07-11 00:00:00",
+  "current_measurements": {
+    "amplitude_mm_s": 3.59,
+    "severity_zone": "Alert",
+    "within_limits": "True"
+  },
+  "trends": {
+    "slope_mm_s_per_day": -7.024,
+    "acceleration": 10.686667,
+    "volatility": 13.842,
+    "pattern": "stable",
+    "pattern_rate": -0.1308
+  },
+  "forecast": {
+    "days_predicted": 30,
+    "next_7_days_max": 27.585,
+    "next_30_days_max": 31.782,
+    "forecast_values": [
+      "7.335",
+      "18.741",
+      "13.718",
+      "18.823",
+      "21.794",
+      "27.585",
+      "16.31",
+      "26.253",
+      "21.933",
+      "25.403",
+      "16.335",
+      "28.212",
+      "17.477",
+      "24.821",
+      "14.485",
+      "29.464",
+      "16.794",
+      "26.552",
+      "10.402",
+      "31.748",
+      "18.181",
+      "26.408",
+      "12.447",
+      "27.937",
+      "16.12",
+      "24.559",
+      "12.01",
+      "31.782",
+      "16.248",
+      "27.482"
+    ]
+  },
+  "failure_prediction": {
+    "days_to_failure": null,
+    "confidence": 0.0,
+    "alert_status": "MONITOR"
+  },
+  "risk_assessment": {
+    "risk_score": 50,
+    "risk_level": "High",
+    "recommendations": [
+      "\u26a1 High instability: Check mounting and alignment"
+    ]
+  },
+  "maintenance": {
+    "suggested_actions": [
+      "\ud83d\udd34 Schedule maintenance within 1 week",
+      "\ud83d\udd0d Perform detailed inspection",
+      "\ud83d\udcde Contact maintenance team",
+      "\u26a0\ufe0f Prepare replacement equipment"
+    ],
+    "next_inspection": "Within 2 weeks"
+  }
+}
