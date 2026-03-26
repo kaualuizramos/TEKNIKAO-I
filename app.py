@@ -18,7 +18,7 @@ JANELA = 15
 PASSOS_FUTURO = 120
 MAX_MAQUINAS = 50
 
-# FEATURE PADRÃO
+# FEATURES
 
 def gerar_features(seq):
     return list(seq) + [
@@ -75,7 +75,7 @@ def carregar_dados():
 
     return blocos
 
-# FEATURES
+# FEATURES GLOBAIS
 
 def criar_features(blocos):
     X, y = [], []
@@ -110,20 +110,34 @@ def treinar_modelo(X, y):
     modelo.fit(X, y)
     return modelo
 
-# PREVISÃO
+# PREVISÃO CORRIGIDA
 
 def projetar(modelo, valores):
     entrada = valores[-JANELA:].copy()
     previsoes = []
+
+    limite = np.mean(valores) + 2.5 * np.std(valores)
 
     for _ in range(PASSOS_FUTURO):
         features = gerar_features(entrada)
         features = np.array(features).reshape(1, -1)
 
         delta = modelo.predict(features)[0]
+
+        # impedir negativos
         delta = max(delta, 0)
 
+        # limitar crescimento absurdo
+        delta = np.clip(delta, 0, 2.0)
+
+        # suavizar crescimento
+        delta = delta * 0.7
+
         novo = entrada[-1] + delta
+
+        # limite físico
+        novo = min(novo, limite * 1.5)
+
         previsoes.append(novo)
 
         entrada = np.append(entrada[1:], novo)
@@ -132,9 +146,9 @@ def projetar(modelo, valores):
 
 # APP
 
-st.title("🔧 TEKNIKAO - Monitoramento Inteligente de Máquinas")
+st.title("🔧 TEKNIKAO - Monitoramento Inteligente")
 
-st.write("Sistema de manutenção preditiva baseado em análise de vibração")
+st.write("Sistema de manutenção preditiva com IA")
 
 # carregar dados
 blocos_brutos = carregar_dados()
@@ -142,7 +156,7 @@ blocos_brutos = carregar_dados()
 # filtrar válidos
 blocos_validos = [b for b in blocos_brutos if len(b) > JANELA]
 
-# ordenar melhores
+# ordenar
 blocos_validos = sorted(blocos_validos, key=len, reverse=True)
 
 # limitar
@@ -151,7 +165,7 @@ blocos_validos = blocos_validos[:MAX_MAQUINAS]
 # features globais
 X, y = criar_features(blocos_validos)
 
-# treinar modelo
+# treino
 with st.spinner("Treinando modelo..."):
     modelo = treinar_modelo(X, y)
 
